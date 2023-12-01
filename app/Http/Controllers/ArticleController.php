@@ -15,7 +15,6 @@ class ArticleController extends Controller
 {
     public function index()
     {
-//        $articles = Article::latest('id')->paginate(10);
         $articles = Article::with('tags')->latest()->paginate(10);
         return response(['articles' => $articles]);
     }
@@ -54,103 +53,12 @@ class ArticleController extends Controller
 
         return response(['article' => $article], 201);
     }
-
-//    public function store(Request $request)
-//    {
-//        $validator = Validator::make($request->all(), [
-//            'title' => 'required|string|max:255',
-//            'description' => 'required|string',
-//            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-//            'tags' => 'nullable|array',
-//            'tags.*' => 'exists:tags,id',
-//        ]);
-//
-//        if ($validator->fails()) {
-//            return response(['errors' => $validator->errors()->all()], 422);
-//        }
-//
-//        $imagePath = null;
-//
-//        if ($request->hasFile('image')) {
-//            // Upload the image to the storage and get the path
-//            $imagePath = $request->file('image')->store('public/images');
-//            // You can also generate a unique filename if needed: $request->file('image')->storeAs('public/images', uniqid() . '.' . $request->file('image')->extension());
-//            // Make the path accessible via web
-//            $imagePath = Storage::url($imagePath);
-//        }
-//
-//        $article = Auth::user()->articles()->create([
-//            'title' => $request->title,
-//            'description' => $request->description,
-//            'image' => $imagePath,
-//        ]);
-//
-//        return response(['article' => $article], 201);
-//    }
-
-
-//    public function update(Request $request, Article $article)
-//    {
-//
-//        // Validation rules for the update request
-////        $validator = Validator([
-////            'title' => 'string|max:255',
-////            'description' => 'string',
-////            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-////        ]);
-//        $validator = Validator::make($request->all(), [
-//            'title' => 'required|string|max:255',
-//            'description' => 'required|string|max:1000',
-//        ]);
-//
-//        // Check if validation fails
-//        if ($validator->fails()) {
-//            // If validation fails, return an error response with validation errors
-//            return response(['errors' => $validator->errors()], 422);
-//        }
-//
-////        dd($validator);
-//
-//
-//
-//        // Authorize the update action based on policies or other authorization logic
-////        $this->authorize('update', $article);
-//
-//        // Default to the existing image path
-//        $imagePath = $article->image;
-//
-//        // Check if a new image is provided in the request
-//        if ($request->hasFile('image')) {
-//            // Upload the new image to the storage and get the path
-//            $imagePath = $request->file('image')->store('public/images');
-//            // Make the path accessible via the web
-//            $imagePath = Storage::url($imagePath);
-//        }
-//
-////        dd($article);
-//
-//        // Update the article with the provided data
-//        $article->update([
-//            'title' => $request->get('title'),
-//            'description' => $request->get('description'),
-//            'image' => $imagePath,
-//        ]);
-//
-//
-//        // Return a success response with the updated article
-//        return response(['article' => $article]);
-//    }
     public function update(Request $request, Article $article)
     {
         // Validation rules for the update request
-        $validator = Validator::make([
-            'title' => $article->title,
-            'description' => $article->description,
-
-        ], [
+        $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
-
         ]);
 
         // Check if validation fails
@@ -170,10 +78,6 @@ class ArticleController extends Controller
             $imagePath = Storage::url($imagePath);
         }
 
-        if ($request->has('tags')) {
-            $article->tags()->sync($request->input('tags'));
-        }
-
         // Update the article with the provided data
         $article->update([
             'title' => $request->input('title'),
@@ -181,9 +85,20 @@ class ArticleController extends Controller
             'image' => $imagePath,
         ]);
 
+        // Sync tags if provided
+        if ($request->has('tags')) {
+            $article->tags()->sync($request->input('tags'));
+        }
+
+        // Refresh the article to get the updated model
+        $article->refresh();
+
         // Return a success response with the updated article
         return response()->json(['article' => $article]);
     }
+
+
+
 //    public function update(Request $request, Article $article)
 //    {
 //        $validator = Validator::make($request->all(), [
@@ -224,13 +139,9 @@ class ArticleController extends Controller
     {
         $query = $request->input('query');
 
-
-
         $articles = Article::where('title', 'like', "%{$query}%")
             ->orWhere('description', 'like', "%{$query}%")
             ->get();
-
-//        dd($articles);
 
         return response(['articles' => $articles], 201);
     }
