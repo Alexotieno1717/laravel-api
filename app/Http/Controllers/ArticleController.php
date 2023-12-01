@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Mockery\Exception;
 
+
 class ArticleController extends Controller
 {
     public function index()
@@ -217,6 +218,21 @@ class ArticleController extends Controller
         }catch (Exception $exception){
             return response()->json($exception->getMessage(),500);
         }
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+
+
+
+        $articles = Article::where('title', 'like', "%{$query}%")
+            ->orWhere('description', 'like', "%{$query}%")
+            ->get();
+
+//        dd($articles);
+
+        return response(['articles' => $articles], 201);
     }
 
 }

@@ -31,7 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tags', [TagsController::class, 'store']);
 
     //Articles Endpoints
+    Route::get('/articles/search', [ArticleController::class, 'search']);
+
     Route::resource('articles', ArticleController::class);
+
     Route::post('/articles/{article}/upvote', [LikeDislikeController::class, 'upvote']);
     Route::post('/articles/{article}/downvote', [LikeDislikeController::class, 'downvote']);
 
