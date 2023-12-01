@@ -14,7 +14,8 @@ class ArticleController extends Controller
 {
     public function index()
     {
-        $articles = Article::latest('id')->paginate(10);
+//        $articles = Article::latest('id')->paginate(10);
+        $articles = Article::with('tags')->latest()->paginate(10);
         return response(['articles' => $articles]);
     }
 
@@ -25,34 +26,66 @@ class ArticleController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
         ]);
-
-        if ($validator->fails()) {
-            return response(['errors' => $validator->errors()->all()], 422);
-        }
 
         $imagePath = null;
 
         if ($request->hasFile('image')) {
-            // Upload the image to the storage and get the path
             $imagePath = $request->file('image')->store('public/images');
-            // You can also generate a unique filename if needed: $request->file('image')->storeAs('public/images', uniqid() . '.' . $request->file('image')->extension());
-            // Make the path accessible via web
             $imagePath = Storage::url($imagePath);
         }
 
-        $article = Auth::user()->articles()->create([
-            'title' => $request->title,
-            'description' => $request->description,
+        $article = auth()->user()->articles()->create([
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
             'image' => $imagePath,
         ]);
 
+        if ($request->has('tags')) {
+            $article->tags()->attach($request->input('tags'));
+        }
+
         return response(['article' => $article], 201);
     }
+
+//    public function store(Request $request)
+//    {
+//        $validator = Validator::make($request->all(), [
+//            'title' => 'required|string|max:255',
+//            'description' => 'required|string',
+//            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+//            'tags' => 'nullable|array',
+//            'tags.*' => 'exists:tags,id',
+//        ]);
+//
+//        if ($validator->fails()) {
+//            return response(['errors' => $validator->errors()->all()], 422);
+//        }
+//
+//        $imagePath = null;
+//
+//        if ($request->hasFile('image')) {
+//            // Upload the image to the storage and get the path
+//            $imagePath = $request->file('image')->store('public/images');
+//            // You can also generate a unique filename if needed: $request->file('image')->storeAs('public/images', uniqid() . '.' . $request->file('image')->extension());
+//            // Make the path accessible via web
+//            $imagePath = Storage::url($imagePath);
+//        }
+//
+//        $article = Auth::user()->articles()->create([
+//            'title' => $request->title,
+//            'description' => $request->description,
+//            'image' => $imagePath,
+//        ]);
+//
+//        return response(['article' => $article], 201);
+//    }
 
 
 //    public function update(Request $request, Article $article)
@@ -134,6 +167,10 @@ class ArticleController extends Controller
             $imagePath = $request->file('image')->store('public/images');
             // Make the path accessible via the web
             $imagePath = Storage::url($imagePath);
+        }
+
+        if ($request->has('tags')) {
+            $article->tags()->sync($request->input('tags'));
         }
 
         // Update the article with the provided data

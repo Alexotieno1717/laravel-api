@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Article;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,5 +25,17 @@ class ArticleFactory extends Factory
             'image' => 'https://source.unsplash.com/random', // Replace with actual path or use faker for images
             'user_id' => User::factory(),
         ];
+    }
+
+    /**
+     * Configure the factory to have tags after creating an article.
+     *
+     * @return $this
+     */
+    public function withTags(): static
+    {
+        return $this->afterCreating(function (Article $article) {
+            $article->tags()->attach(Tag::factory()->count(3)->create());
+        });
     }
 }
